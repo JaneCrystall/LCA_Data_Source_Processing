@@ -26,13 +26,7 @@ def func_calling_chain():
         "properties": {
             "sources": {
                 "title": "sources",
-                "description": """All sources information extracted from text, in a json format. Each source should be in a single string, including its title, publisher, and the year of publication if available. These details should be placed in an array named 'sources'. For instance, if I have two sources: "平成12年工業統計調査" published by "経済産業省" in 2002, and "素形材年鑑" published by "財団法人素形材センター", the JSON should look like this:
-{
-  "sources": [
-    "平成12年工業統計調査 (経済産業省, 2002)",
-    "素形材年鑑 (財団法人素形材センター)"
-  ]
-}""",
+                "description": """All sources information extracted from text, in a json format. Each source should be in a json format, including its title, publisher, the year of publication, and other information if available. The JSON should look like this:{"sources": [{"title": "平成12年工業統計調査","publisher": "経済産業省","year": 2002},{"title": "素形材年鑑","publisher": "財団法人素形材センター"}]}""",
                 "type": "string",
             },
         },
@@ -69,16 +63,20 @@ def func_calling_chain():
 # 使用pandas读取Excel文件
 df = pd.read_excel("data/idea-348.xlsx")
 general_comment = df["GeneralComment"]
+# global_ids = df["GlobalId"]
 
 sources_function_calling_chain = func_calling_chain()
 
-response = []
-for comment in general_comment:
-    func_calling_response = sources_function_calling_chain.run(comment)
-    response.append(func_calling_response)
-
-# 将结果添加到 DataFrame
-df["Response"] = response
+# 新增一个空的 Response 列
+df['Response'] = pd.Series(dtype='object')
+for index, comment in general_comment.items():
+    try:
+        func_calling_response = sources_function_calling_chain.run(comment)
+        df.at[index, 'Response'] = func_calling_response
+        print(func_calling_response)
+    except Exception as e:
+        print(f"Error processing comment at index {index}: {e}")
+        df.at[index, 'Response'] = f"Error: {e}"
 
 # 将修改后的 DataFrame 写回原 Excel 文件
 df.to_excel("data/idea-348.xlsx", index=False)
