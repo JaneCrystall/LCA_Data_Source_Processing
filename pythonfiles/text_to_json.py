@@ -68,19 +68,15 @@ general_comment = df["GeneralComment"]
 sources_function_calling_chain = func_calling_chain()
 
 # 新增一个空的 Response 列
-df['Response'] = pd.Series(dtype='object')
+df['Sources'] = pd.Series(dtype='object')
 for index, comment in general_comment.items():
     try:
         func_calling_response = sources_function_calling_chain.run(comment)
-        df.at[index, 'Response'] = func_calling_response
+        df.at[index, 'Sources'] = func_calling_response
         print(func_calling_response)
     except Exception as e:
         print(f"Error processing comment at index {index}: {e}")
-        df.at[index, 'Response'] = f"Error: {e}"
+        df.at[index, 'Sources'] = f"Error: {e}"
 
 # 将修改后的 DataFrame 写回原 Excel 文件
 df.to_excel("data/idea-348.xlsx", index=False)
-
-# all_sources = []
-# for item in response:
-#     all_sources.extend(item['sources'])
