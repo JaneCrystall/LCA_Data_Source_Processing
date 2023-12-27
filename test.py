@@ -5,8 +5,7 @@ import tempfile
 import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
-
-
+from tenacity import retry
 
 load_dotenv()
 openai_client = OpenAI()
@@ -33,35 +32,29 @@ result_list = [
 ]
 
 
-# result_str = json.dumps(result_list, ensure_ascii=False)
 
-# msg = f"""[
-#     {{
-#         "role": "system",
-#         "content": "You are a helpful assistant designed to output JSON.",
-#     }},
-#     {{
-#         "role": "user",
-#         "content": "把下面信息变成结构化的表格including First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal:\n\n{result_str}\n",
-#     }},
-# ]"""
+@retry(stop_max_attempt_number=3)
+def create_completion(**kwargs):
+    return openai_client.chat.completions.create(**kwargs)
 
-# msg_list = json.loads(msg)
-response = openai_client.chat.completions.create(
+response = create_completion(
     model="gpt-4-1106-preview",
-    # response_format={"type": "json_object"},
+    response_format={"type": "json_object"},
     messages=[
-    {
-        "role": "system",
-        "content": "You are a helpful assistant designed to output JSON.",
-    },
-    {
-        "role": "user",
-        "content": f"""把下面信息变成结构化csv表格，字段包括First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal:\n\n{result_list}\n""",
-    }
-]
+        {
+            "role": "system",
+            "content": "You are a helpful assistant designed to output JSON with the key name of CSV_Content.",
+        },
+        {
+            "role": "user",
+            "content": f"""从下面信息中仔细分辨并提取信息: First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal，输出为csv格式：\n\n{text}""",
+        },
+    ],
 )
 
-result = response.choices[0].message.content
 
-print(result)
+result = response.choices[0].message.content
+dict_data = json.loads(result)
+
+with open("test.csv", "a+") as f:
+    f.write(dict_data["CSV_Content"])

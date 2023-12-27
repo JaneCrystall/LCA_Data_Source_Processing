@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 
@@ -23,7 +24,6 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 
-from tools.vision import vision_completion
 
 load_dotenv()
 openai_client = OpenAI()
@@ -116,13 +116,14 @@ for chunk in chunks:
             text_list[-1] = text_list[-1] + "\n\n" + chunk.metadata.text_as_html
         else:
             text_list.append(chunk.metadata.text_as_html)
-result_list = []
 
-for text in text_list:
-    split_text = text.split("\n\n", 1)
-    if len(split_text) == 2:
-        title, body = split_text
-        result_list.append({"title": title, "body": body})
+# result_list = []
+
+# for text in text_list:
+#     split_text = text.split("\n\n", 1)
+#     if len(split_text) == 2:
+#         title, body = split_text
+#         result_list.append({"title": title, "body": body})
 
 
 # msgs = [
@@ -133,17 +134,32 @@ for text in text_list:
 #     HumanMessagePromptTemplate.from_template("{result_list}"),
 # ]
 
+@retry(stop_max_attempt_number=5)
+def create_completion(**kwargs):
+    return openai_client.chat.completions.create(**kwargs)
 
-response = openai_client.chat.completions.create(
-  model="gpt-4-1106-preview",
-  response_format={ "type": "json_object" },
-  messages=[
-    {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-    {"role": "user", "content": "Generate structured JSON for the text: {result_list}"}
-  ]
-) 
-  
-print(response.choices[0].message.content)
+response = create_completion(
+    model="gpt-4-1106-preview",
+    response_format={"type": "json_object"},
+    messages=[
+        {
+            "role": "system",
+            "content": "You are a helpful assistant designed to output JSON with the key name of CSV_Content.",
+        },
+        {
+            "role": "user",
+            "content": f"""从下面信息中仔细分辨并提取信息: First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal，输出为csv格式：\n\n{text_list}""",
+        },
+    ],
+)
+
+
+result = response.choices[0].message.content
+dict_data = json.loads(result)
+
+with open("test.csv", "a+") as f:
+    f.write(dict_data["CSV_Content"])
+
 
 
 df = pd.DataFrame(result_list)
