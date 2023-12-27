@@ -5,8 +5,7 @@ import tempfile
 import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
-from PyPDF2 import PdfReader, PdfWriter
-from tenacity import retry
+
 
 
 load_dotenv()
@@ -34,24 +33,35 @@ result_list = [
 ]
 
 
-result_str = json.dumps(result_list, ensure_ascii=False)
+# result_str = json.dumps(result_list, ensure_ascii=False)
 
-msg = f"""[
-    {{
-        "role": "system",
-        "content": "You are a helpful assistant designed to output JSON.",
-    }},
-    {{
-        "role": "user",
-        "content": "把下面信息变成结构化的表格including First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal:\n\n{result_str}\n",
-    }},
-]"""
+# msg = f"""[
+#     {{
+#         "role": "system",
+#         "content": "You are a helpful assistant designed to output JSON.",
+#     }},
+#     {{
+#         "role": "user",
+#         "content": "把下面信息变成结构化的表格including First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal:\n\n{result_str}\n",
+#     }},
+# ]"""
 
-msg_list = json.loads(msg)
+# msg_list = json.loads(msg)
 response = openai_client.chat.completions.create(
     model="gpt-4-1106-preview",
-    response_format={"type": "json_object"},
-    messages=msg_list,
+    # response_format={"type": "json_object"},
+    messages=[
+    {
+        "role": "system",
+        "content": "You are a helpful assistant designed to output JSON.",
+    },
+    {
+        "role": "user",
+        "content": f"""把下面信息变成结构化csv表格，字段包括First Author, Additional Author(s), Title, Year, Volume Number, Issue Number, Journal:\n\n{result_list}\n""",
+    }
+]
 )
 
-print(response.choices[0].message.content)
+result = response.choices[0].message.content
+
+print(result)

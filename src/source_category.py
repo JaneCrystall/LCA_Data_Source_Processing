@@ -29,7 +29,7 @@ def query_func_calling(query: str):
                     "properties": {
                         "source_category": {
                             "title": "source_category",
-                            "description": "Generate category for sources of LCA database. The category must be one of the following: 'Article in periodical', 'Chapter in anthology', 'Monograph', 'Industry report', 'Standard', 'Environmental Product Declaration (EPD)','Patent', 'Statistical documents', 'Software or database', 'Personal communication','Direct measurement'.",
+                            "description": "Generate category for sources of LCA database. The category must be one of the following: 'Article in periodical', 'Chapter in anthology', 'Monograph', 'Industry report', 'Standard/Directive', 'Environmental Product Declaration (EPD)','Patent', 'Statistical documents', 'Software or database', 'Personal communication','Direct measurement'.",
                             "type": "string",
                         },
                     },
@@ -51,13 +51,19 @@ def query_func_calling(query: str):
     response_string = response_message.tool_calls[0].function.arguments
     return response_string
 
-file_path = 'Gabi_source.xlsx'
+file_path = 'USLCI_source.xlsx'
 
 # 读取Excel文件
 df = pd.read_excel(file_path)
 source_info = df['source_info']
-for source in source_info:
-    source_category = query_func_calling(source)
-    df.loc[df['source_info'] == source, 'source_category'] = source_category
+for index, source in enumerate(source_info):
+    try:
+        source_category = query_func_calling(source)
+        df.loc[df['source_info'] == source, 'source_category'] = source_category
+        print(index + 1, source_category)
+    except Exception as e:
+        print(f"Error processing source '{source}': {e}")
+        continue  # 继续下一个迭代
 
-df.to_excel('Gabi_source_category.xlsx', index=False)
+
+df.to_excel('USLCI_source_category.xlsx', index=False)
