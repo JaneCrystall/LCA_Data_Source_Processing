@@ -150,3 +150,6 @@ secrets.toml
 
 *.xlsx
 *.xls
+*.pdf
+*.txt
+*.csv

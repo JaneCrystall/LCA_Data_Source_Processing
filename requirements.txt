@@ -2,7 +2,8 @@ langchain
 openai
 openpyxl
 pandas
+PyPDF2
 python-dotenv
+retrying
 toml
-pdfminer.six
 unstructured[all-docs]
